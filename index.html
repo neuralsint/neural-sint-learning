@@ -5,45 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Neural Sint обучение</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body { font-family: sans-serif; padding: 16px; background: #1e1e2e; color: white; }
-        .button { background: #667eea; color: white; border: none; border-radius: 24px; padding: 12px 24px; cursor: pointer; margin: 10px 0; }
-        #log { margin-top: 20px; white-space: pre-wrap; }
-    </style>
 </head>
 <body>
     <h1>Neural Sint training</h1>
-    <div>
-        <button class="button" onclick="sendData('open_video', 'intro')">Получить ссылку (тест)</button>
-    </div>
-    <div id="log">Лог:</div>
-
+    <button onclick="sendData()">Получить ссылку</button>
     <script>
-        const logDiv = document.getElementById('log');
-        function log(msg) {
-            logDiv.innerHTML += '\n' + msg;
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        function sendData() {
+            const data = JSON.stringify({ action: 'open_video', id: 'intro' });
+            tg.sendData(data);
+            tg.showAlert('Отправлено: ' + data);
         }
 
-        const tg = window.Telegram ? window.Telegram.WebApp : null;
-        if (!tg) {
-            log('❌ Telegram WebApp не найден!');
-        } else {
-            tg.ready();
-            tg.expand();
-            log('✅ Telegram WebApp инициализирован');
-
-            window.sendData = function(action, id) {
-                // Формируем JSON
-                const data = JSON.stringify({ action, id });
-                log('Отправляю: ' + data);
-                tg.sendData(data);
-                log('✅ Данные отправлены');
-                tg.showAlert('Отправлено: ' + data);
-            };
-
-            tg.MainButton.setText("Закрыть");
-            tg.MainButton.onClick(() => tg.close());
-        }
+        tg.MainButton.setText("Закрыть");
+        tg.MainButton.onClick(() => tg.close());
     </script>
 </body>
 </html>
