@@ -6,6 +6,7 @@
     <title>Neural Sint обучение</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* Здесь ваши стили (можно оставить как есть) */
         * {
             margin: 0;
             padding: 0;
@@ -110,19 +111,9 @@
             color: var(--tg-theme-hint-color, #a0a0b0);
             font-size: 14px;
         }
-        .error-message {
-            background: #ff4444;
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
     </style>
 </head>
 <body>
-    <div class="error-message" id="errorMessage"></div>
-
     <div class="header">
         <div class="logo">NS</div>
         <h1>Neural Sint training</h1>
@@ -188,50 +179,40 @@
     </div>
 
     <script>
-        // Проверка наличия Telegram WebApp
-        let tg;
-        try {
-            tg = window.Telegram.WebApp;
+        // Проверяем, что Telegram WebApp доступен
+        const tg = window.Telegram ? window.Telegram.WebApp : null;
+        if (!tg) {
+            document.body.innerHTML = '<div style="color: red; padding: 20px;">Ошибка: приложение должно быть открыто в Telegram!</div>';
+        } else {
             tg.ready();
             tg.expand();
-            console.log('Telegram WebApp инициализирован');
-        } catch (e) {
-            console.error('Ошибка инициализации Telegram WebApp:', e);
-            document.getElementById('errorMessage').style.display = 'block';
-            document.getElementById('errorMessage').innerText = 'Ошибка: приложение должно быть открыто в Telegram!';
-            tg = null;
-        }
 
-        const tabVideo = document.getElementById('tab-video');
-        const tabText = document.getElementById('tab-text');
-        const contentVideo = document.getElementById('content-video');
-        const contentText = document.getElementById('content-text');
+            const tabVideo = document.getElementById('tab-video');
+            const tabText = document.getElementById('tab-text');
+            const contentVideo = document.getElementById('content-video');
+            const contentText = document.getElementById('content-text');
 
-        tabVideo.addEventListener('click', () => {
-            tabVideo.classList.add('active');
-            tabText.classList.remove('active');
-            contentVideo.classList.remove('hidden');
-            contentText.classList.add('hidden');
-        });
+            tabVideo.addEventListener('click', () => {
+                tabVideo.classList.add('active');
+                tabText.classList.remove('active');
+                contentVideo.classList.remove('hidden');
+                contentText.classList.add('hidden');
+            });
 
-        tabText.addEventListener('click', () => {
-            tabText.classList.add('active');
-            tabVideo.classList.remove('active');
-            contentText.classList.remove('hidden');
-            contentVideo.classList.add('hidden');
-        });
+            tabText.addEventListener('click', () => {
+                tabText.classList.add('active');
+                tabVideo.classList.remove('active');
+                contentText.classList.remove('hidden');
+                contentVideo.classList.add('hidden');
+            });
 
-        function sendRequest(action, id) {
-            console.log('sendRequest called', action, id);
-            if (tg) {
-                tg.sendData(JSON.stringify({ action, id }));
+            window.sendRequest = function(action, id) {
+                const data = JSON.stringify({ action, id });
+                console.log('Отправка данных:', data); // для отладки
+                tg.sendData(data);
                 tg.showAlert('Запрос отправлен! Бот пришлёт ссылку после проверки подписки.');
-            } else {
-                alert('Ошибка: Telegram WebApp недоступен. Откройте это приложение через бота.');
-            }
-        }
+            };
 
-        if (tg) {
             tg.MainButton.setText("Закрыть");
             tg.MainButton.onClick(() => tg.close());
         }
