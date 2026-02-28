@@ -110,9 +110,19 @@
             color: var(--tg-theme-hint-color, #a0a0b0);
             font-size: 14px;
         }
+        .error-message {
+            background: #ff4444;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <div class="error-message" id="errorMessage"></div>
+
     <div class="header">
         <div class="logo">NS</div>
         <h1>Neural Sint training</h1>
@@ -178,9 +188,19 @@
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
+        // Проверка наличия Telegram WebApp
+        let tg;
+        try {
+            tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            console.log('Telegram WebApp инициализирован');
+        } catch (e) {
+            console.error('Ошибка инициализации Telegram WebApp:', e);
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorMessage').innerText = 'Ошибка: приложение должно быть открыто в Telegram!';
+            tg = null;
+        }
 
         const tabVideo = document.getElementById('tab-video');
         const tabText = document.getElementById('tab-text');
@@ -202,12 +222,19 @@
         });
 
         function sendRequest(action, id) {
-            tg.sendData(JSON.stringify({ action, id }));
-            tg.showAlert('Запрос отправлен! Бот пришлёт ссылку после проверки подписки.');
+            console.log('sendRequest called', action, id);
+            if (tg) {
+                tg.sendData(JSON.stringify({ action, id }));
+                tg.showAlert('Запрос отправлен! Бот пришлёт ссылку после проверки подписки.');
+            } else {
+                alert('Ошибка: Telegram WebApp недоступен. Откройте это приложение через бота.');
+            }
         }
 
-        tg.MainButton.setText("Закрыть");
-        tg.MainButton.onClick(() => tg.close());
+        if (tg) {
+            tg.MainButton.setText("Закрыть");
+            tg.MainButton.onClick(() => tg.close());
+        }
     </script>
 </body>
 </html>
