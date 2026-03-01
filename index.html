@@ -164,6 +164,11 @@
             cursor: pointer;
             margin-left: 8px;
         }
+        .text-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
     </style>
 </head>
 <body>
@@ -172,10 +177,10 @@
         <h1>Neural Sint training</h1>
     </div>
 
-    <!-- Сообщение об ошибке (скрыто) -->
+    <!-- Сообщение об ошибке -->
     <div id="error-message" class="error-message hidden"></div>
 
-    <!-- Режим меню (сетка видео) -->
+    <!-- Режим меню -->
     <div id="menu-mode">
         <div class="tabs">
             <button class="tab active" id="tab-video">🎥 Видео</button>
@@ -183,15 +188,11 @@
         </div>
 
         <div class="content" id="content-video">
-            <div class="video-grid" id="video-grid">
-                <!-- Видео карточки будут добавляться динамически через JS -->
-            </div>
+            <div class="video-grid" id="video-grid"></div>
         </div>
 
         <div class="content hidden" id="content-text">
-            <div class="text-list" id="text-list">
-                <!-- Текстовые материалы -->
-            </div>
+            <div class="text-list" id="text-list"></div>
         </div>
 
         <div class="footer">
@@ -199,7 +200,7 @@
         </div>
     </div>
 
-    <!-- Режим видеоплеера (скрыт по умолчанию) -->
+    <!-- Режим плеера -->
     <div id="player-mode" class="hidden">
         <div class="video-player-container">
             <video id="video-player" controls autoplay muted playsinline>
@@ -222,28 +223,58 @@
         const videoGrid = document.getElementById('video-grid');
         const textList = document.getElementById('text-list');
 
-        // Данные о видео (id, название, описание, обложка)
+        // Данные о видео (замените ссылки на обложки, когда загрузите)
         const videos = [
             {
                 id: 'intro',
                 title: 'Введение в нейросети',
                 description: 'Что такое нейросети и как они работают? Основные понятия.',
-                thumbnail: 'https://s3.twcstorage.ru/neuralsint-video-test/thumbnails/intro.jpg' // заглушка
+                thumbnail: 'https://via.placeholder.com/300x169?text=Введение' // заглушка
             },
-            // Добавьте остальные видео по аналогии
+            {
+                id: 'prompts',
+                title: 'Как правильно писать промпты',
+                description: 'Секреты эффективных запросов для генерации изображений.',
+                thumbnail: 'https://via.placeholder.com/300x169?text=Промпты'
+            },
+            {
+                id: 'image',
+                title: 'Генерация изображений',
+                description: 'Советы и примеры, лучшие практики.',
+                thumbnail: 'https://via.placeholder.com/300x169?text=Изображения'
+            },
+            {
+                id: 'video',
+                title: 'Создание видео с ИИ',
+                description: 'Инструменты и подходы.',
+                thumbnail: 'https://via.placeholder.com/300x169?text=Видео'
+            },
+            {
+                id: 'audio',
+                title: 'Генерация музыки',
+                description: 'Как нейросети создают мелодии и треки.',
+                thumbnail: 'https://via.placeholder.com/300x169?text=Музыка'
+            }
         ];
 
-        // Данные о текстах
         const texts = [
             {
                 id: 'guide1',
                 title: 'Гайд: Основы промптинга',
-                description: 'Подробное руководство для новичков с примерами.',
-                link: 'https://docs.google.com/...' // заглушка
+                description: 'Подробное руководство для новичков с примерами.'
+            },
+            {
+                id: 'article1',
+                title: 'Статья: 10 ошибок при генерации фото',
+                description: 'Как их избежать и получать качественные результаты.'
+            },
+            {
+                id: 'models',
+                title: 'Справочник: Модели нейросетей',
+                description: 'Описание популярных моделей и их возможностей.'
             }
         ];
 
-        // Рендеринг карточек видео
         function renderVideos() {
             videoGrid.innerHTML = '';
             videos.forEach(video => {
@@ -252,7 +283,7 @@
                 card.setAttribute('data-id', video.id);
                 card.innerHTML = `
                     <div class="video-thumbnail">
-                        <img src="${video.thumbnail}" alt="${video.title}" onerror="this.src='https://via.placeholder.com/300x169?text=No+Thumbnail'">
+                        <img src="${video.thumbnail}" alt="${video.title}" loading="lazy">
                         <div class="play-icon">▶</div>
                     </div>
                     <div class="video-info">
@@ -267,17 +298,16 @@
             });
         }
 
-        // Рендеринг текстовых материалов
         function renderTexts() {
             textList.innerHTML = '';
             texts.forEach(text => {
                 const card = document.createElement('div');
-                card.className = 'video-card'; // используем тот же стиль
+                card.className = 'video-card';
                 card.innerHTML = `
                     <div class="video-info">
                         <div class="video-title">${text.title}</div>
                         <div class="video-description">${text.description}</div>
-                        <button class="button" style="margin-top:8px;">Читать</button>
+                        <button class="back-button" style="margin-top:8px;">Читать</button>
                     </div>
                 `;
                 card.addEventListener('click', () => {
@@ -307,11 +337,10 @@
             contentVideo.classList.add('hidden');
         });
 
-        // Функция отправки запроса в бота
-        window.sendRequest = function(action, id) {
+        function sendRequest(action, id) {
             tg.sendData(JSON.stringify({ action, id }));
             tg.showAlert('Запрос отправлен! Ожидайте ответ...');
-        };
+        }
 
         // Обработка ответа от бота
         tg.onEvent('webAppData', function(data) {
@@ -319,14 +348,12 @@
             try {
                 const response = JSON.parse(data);
                 if (response.type === 'video') {
-                    // Показываем плеер и загружаем видео
                     videoPlayer.src = response.url;
                     menuMode.classList.add('hidden');
                     playerMode.classList.remove('hidden');
                     errorDiv.classList.add('hidden');
                     videoPlayer.play().catch(e => console.log('Автовоспроизведение заблокировано', e));
                 } else if (response.type === 'text') {
-                    // Для текстов открываем ссылку в браузере (можно и в Mini App)
                     window.open(response.url, '_blank');
                 } else if (response.type === 'error') {
                     errorDiv.innerHTML = response.message;
@@ -334,8 +361,6 @@
                         errorDiv.innerHTML += `<span class="subscribe-link" onclick="window.open('${response.link}', '_blank')"> Подписаться</span>`;
                     }
                     errorDiv.classList.remove('hidden');
-                } else {
-                    console.warn('Неизвестный тип ответа:', response);
                 }
             } catch (e) {
                 console.error('Ошибка парсинга ответа:', e);
@@ -352,11 +377,9 @@
             errorDiv.classList.add('hidden');
         };
 
-        // Инициализация
         renderVideos();
         renderTexts();
 
-        // Главная кнопка Telegram
         tg.MainButton.setText("Закрыть");
         tg.MainButton.onClick(() => tg.close());
     </script>
