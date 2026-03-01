@@ -65,44 +65,60 @@
         .content {
             flex: 1;
         }
-        .video-list, .text-list {
-            display: flex;
-            flex-direction: column;
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 16px;
+            margin-bottom: 20px;
         }
-        .video-card, .text-card {
+        .video-card {
             background: var(--tg-theme-secondary-bg-color, #2a2a3a);
-            border-radius: 12px;
-            padding: 16px;
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .video-card:hover {
+            transform: scale(1.02);
+        }
+        .video-thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #333;
+            position: relative;
+        }
+        .video-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 48px;
+            height: 48px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 50%;
             display: flex;
-            flex-direction: column;
-            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            border: 2px solid white;
         }
-        .video-title, .text-title {
-            font-size: 18px;
+        .video-info {
+            padding: 12px;
+        }
+        .video-title {
+            font-size: 16px;
             font-weight: 600;
+            margin-bottom: 4px;
         }
-        .video-description, .text-description {
+        .video-description {
             font-size: 14px;
             color: var(--tg-theme-hint-color, #a0a0b0);
-        }
-        .button {
-            background: var(--tg-theme-button-color, #667eea);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            border-radius: 24px;
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            align-self: flex-start;
-            transition: 0.2s;
-        }
-        .button:hover {
-            opacity: 0.9;
-        }
-        .hidden {
-            display: none !important;
         }
         .footer {
             margin-top: 24px;
@@ -132,6 +148,9 @@
             cursor: pointer;
             align-self: flex-start;
         }
+        .hidden {
+            display: none !important;
+        }
         .error-message {
             background: #ff4444;
             color: white;
@@ -156,7 +175,7 @@
     <!-- Сообщение об ошибке (скрыто) -->
     <div id="error-message" class="error-message hidden"></div>
 
-    <!-- Режим меню (список уроков) -->
+    <!-- Режим меню (сетка видео) -->
     <div id="menu-mode">
         <div class="tabs">
             <button class="tab active" id="tab-video">🎥 Видео</button>
@@ -164,28 +183,19 @@
         </div>
 
         <div class="content" id="content-video">
-            <div class="video-list">
-                <div class="video-card">
-                    <div class="video-title">Введение в нейросети</div>
-                    <div class="video-description">Что такое нейросети и как они работают? Основные понятия.</div>
-                    <button class="button" onclick="sendRequest('open_video', 'intro')">Смотреть видео</button>
-                </div>
-                <!-- Можно добавить другие видео позже -->
+            <div class="video-grid" id="video-grid">
+                <!-- Видео карточки будут добавляться динамически через JS -->
             </div>
         </div>
 
         <div class="content hidden" id="content-text">
-            <div class="text-list">
-                <div class="text-card">
-                    <div class="text-title">Гайд: Основы промптинга</div>
-                    <div class="text-description">Подробное руководство для новичков с примерами.</div>
-                    <button class="button" onclick="sendRequest('open_text', 'guide1')">Получить ссылку</button>
-                </div>
+            <div class="text-list" id="text-list">
+                <!-- Текстовые материалы -->
             </div>
         </div>
 
         <div class="footer">
-            Нажми «Смотреть видео» – бот проверит подписку и запустит видео
+            Нажми на видео – бот проверит подписку и запустит плеер
         </div>
     </div>
 
@@ -209,6 +219,73 @@
         const playerMode = document.getElementById('player-mode');
         const videoPlayer = document.getElementById('video-player');
         const errorDiv = document.getElementById('error-message');
+        const videoGrid = document.getElementById('video-grid');
+        const textList = document.getElementById('text-list');
+
+        // Данные о видео (id, название, описание, обложка)
+        const videos = [
+            {
+                id: 'intro',
+                title: 'Введение в нейросети',
+                description: 'Что такое нейросети и как они работают? Основные понятия.',
+                thumbnail: 'https://s3.twcstorage.ru/neuralsint-video-test/thumbnails/intro.jpg' // заглушка
+            },
+            // Добавьте остальные видео по аналогии
+        ];
+
+        // Данные о текстах
+        const texts = [
+            {
+                id: 'guide1',
+                title: 'Гайд: Основы промптинга',
+                description: 'Подробное руководство для новичков с примерами.',
+                link: 'https://docs.google.com/...' // заглушка
+            }
+        ];
+
+        // Рендеринг карточек видео
+        function renderVideos() {
+            videoGrid.innerHTML = '';
+            videos.forEach(video => {
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.setAttribute('data-id', video.id);
+                card.innerHTML = `
+                    <div class="video-thumbnail">
+                        <img src="${video.thumbnail}" alt="${video.title}" onerror="this.src='https://via.placeholder.com/300x169?text=No+Thumbnail'">
+                        <div class="play-icon">▶</div>
+                    </div>
+                    <div class="video-info">
+                        <div class="video-title">${video.title}</div>
+                        <div class="video-description">${video.description}</div>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    sendRequest('open_video', video.id);
+                });
+                videoGrid.appendChild(card);
+            });
+        }
+
+        // Рендеринг текстовых материалов
+        function renderTexts() {
+            textList.innerHTML = '';
+            texts.forEach(text => {
+                const card = document.createElement('div');
+                card.className = 'video-card'; // используем тот же стиль
+                card.innerHTML = `
+                    <div class="video-info">
+                        <div class="video-title">${text.title}</div>
+                        <div class="video-description">${text.description}</div>
+                        <button class="button" style="margin-top:8px;">Читать</button>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    sendRequest('open_text', text.id);
+                });
+                textList.appendChild(card);
+            });
+        }
 
         // Вкладки
         const tabVideo = document.getElementById('tab-video');
@@ -242,17 +319,16 @@
             try {
                 const response = JSON.parse(data);
                 if (response.type === 'video') {
-                    // Воспроизводим видео
+                    // Показываем плеер и загружаем видео
                     videoPlayer.src = response.url;
                     menuMode.classList.add('hidden');
                     playerMode.classList.remove('hidden');
                     errorDiv.classList.add('hidden');
                     videoPlayer.play().catch(e => console.log('Автовоспроизведение заблокировано', e));
                 } else if (response.type === 'text') {
-                    // Для текстов можно открыть ссылку в браузере
+                    // Для текстов открываем ссылку в браузере (можно и в Mini App)
                     window.open(response.url, '_blank');
                 } else if (response.type === 'error') {
-                    // Показываем ошибку
                     errorDiv.innerHTML = response.message;
                     if (response.link) {
                         errorDiv.innerHTML += `<span class="subscribe-link" onclick="window.open('${response.link}', '_blank')"> Подписаться</span>`;
@@ -275,6 +351,10 @@
             menuMode.classList.remove('hidden');
             errorDiv.classList.add('hidden');
         };
+
+        // Инициализация
+        renderVideos();
+        renderTexts();
 
         // Главная кнопка Telegram
         tg.MainButton.setText("Закрыть");
